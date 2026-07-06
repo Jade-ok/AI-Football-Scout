@@ -1,0 +1,4 @@
+pandas
+soccerdata
+google-genai
+jupyter
