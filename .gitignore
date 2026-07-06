@@ -5,4 +5,3 @@ __pycache__/
 .ipynb_checkpoints/
 notebooks/downloaded_files/
 pyvenv.cfg
-*.lock
