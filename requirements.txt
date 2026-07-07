@@ -2,3 +2,4 @@ pandas
 soccerdata
 google-genai
 jupyter
+python-dotenv
