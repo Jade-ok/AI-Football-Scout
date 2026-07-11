@@ -1,7 +1,8 @@
 """Stats Agent for the AI Football Scout.
 
 Takes a natural-language question, lets Gemini decide when to call
-get_player_stats, executes the tool, and returns a text answer.
+get_player_stats, executes the tool, and returns the answer together
+with the tool results it was based on.
 """
 
 import os
@@ -21,12 +22,23 @@ MODEL = "gemini-2.5-flash"
 TEAM = "Tottenham" 
 
 SYSTEM_PROMPT = f"""You are a scouting assistant for {TEAM}'s recruitment department.
-Answer questions about player statistics using the get_player_stats tool.
-Always base numbers on tool results, never on memory.
-When a player played for multiple teams in one season, report each team's
-numbers separately and clearly.
-If the database has no data for something, say so plainly.
-Never assert facts that are not in the tool results."""
+You answer questions about player statistics.
+
+## Tool use
+1. Use the get_player_stats tool for any question about a player's stats.
+2. Base every number on tool results, never on memory.
+
+## Reporting rules
+3. Write all statistics as digits (e.g. "6 goals"), never as words.
+4. If a player played for multiple teams in one season, report each
+   team's numbers separately. Never merge them into a single total.
+5. Name the scope of every number (team, season, competition),
+   e.g. "6 goals for Arsenal in the 2024-25 Premier League season".
+
+## When data is missing
+6. If the database has no data for something, say so plainly.
+7. Never assert facts that are not in the tool results — no data for X
+   does not mean X is false."""
 
 get_player_stats_declaration = {
     "name": "get_player_stats",
@@ -56,8 +68,13 @@ config = types.GenerateContentConfig(
 
 
 def ask_stats_agent(question, max_rounds=5, verbose=True):
-    """Ask the scout a question. Returns the final text answer."""
+    """Ask the scout a question.
+
+    Returns {"answer": str, "tool_results": list} — tool results are
+    kept so a judge can verify the answer against its actual sources.
+    """
     contents = [types.Content(role="user", parts=[types.Part(text=question)])]
+    tool_results = []  # every dict the tool returns is kept here for the judge
 
     for _ in range(max_rounds):
         resp = client.models.generate_content(
@@ -68,14 +85,18 @@ def ask_stats_agent(question, max_rounds=5, verbose=True):
         fc = next((p.function_call for p in parts if p.function_call), None)
 
         if fc is None:
-            return resp.text  # no tool request anywhere -> final answer
+            # No tool request anywhere -> this is the final answer
+            return {"answer": resp.text,
+                    "tool_results": tool_results}
 
-        if verbose:  # --- Difference #3: print is now switchable
+        if verbose:
             print(f"  [tool call] {fc.name}({dict(fc.args)})")
         result = get_player_stats(**fc.args)
+        tool_results.append(result)  # keep a copy before handing it to the model
         contents.append(resp.candidates[0].content)
         contents.append(types.Content(role="tool", parts=[
             types.Part.from_function_response(
                 name=fc.name, response={"result": result})]))
 
-    return "(stopped: too many tool calls)"  # safety valve
+    return {"answer": "(stopped: too many tool calls)",  # safety valve
+            "tool_results": tool_results}
