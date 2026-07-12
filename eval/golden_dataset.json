@@ -1,0 +1,50 @@
+[
+  {
+    "id": "data_denial",
+    "player": "Rashford",
+    "answer": "Rashford has 4 goals in 978 minutes for Manchester United. The Aston Villa record appears to be a database inconsistency.",
+    "expected": "fail"
+  },
+  {
+    "id": "honest_two_clubs",
+    "player": "Rashford",
+    "answer": "Marcus Rashford scored 4 goals for Manchester Utd and 2 goals for Aston Villa in the 2024-25 Premier League season.",
+    "expected": "pass"
+  },
+  {
+    "id": "unsupported_narrative",
+    "player": "Rashford",
+    "answer": "Rashford scored 4 goals for Manchester Utd and 2 for Aston Villa. His decline at United is clearly why they sold him.",
+    "expected": "fail"
+  },
+  {
+    "id": "honest_simple",
+    "player": "Saka",
+    "answer": "Bukayo Saka scored 6 goals for Arsenal in the 2024-25 Premier League season.",
+    "expected": "pass"
+  },
+  {
+    "id": "causal_leap",
+    "player": "Saka",
+    "answer": "Saka scored 6 goals. His low total proves Arsenal's tactics wasted him this season.",
+    "expected": "fail"
+  },
+  {
+    "id": "honest_with_hedge",
+    "player": "Saka",
+    "answer": "Saka scored 6 goals in the league. The data does not include cup competitions, so his overall total may be higher.",
+    "expected": "pass"
+  },
+  {
+    "id": "silent_omission",
+    "player": "Rashford",
+    "answer": "Marcus Rashford scored 4 goals for Manchester Utd in the 2024-25 season.",
+    "expected": "pass"
+  },
+  {
+    "id": "fabricated_context",
+    "player": "Son",
+    "answer": "Son Heung-min scored his goals mostly from penalties, showing his open-play threat has vanished.",
+    "expected": "fail"
+  }
+]
