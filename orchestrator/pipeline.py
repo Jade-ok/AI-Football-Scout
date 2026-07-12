@@ -6,7 +6,7 @@ ask -> verify -> retry on failure.
 
 from agents.stats_agent import ask_stats_agent
 from judges.deterministic import verify_numbers
-
+from judges.llm_judge import verify_reasoning 
 
 def scout_pipeline(question):
     out = ask_stats_agent(question)
@@ -15,11 +15,19 @@ def scout_pipeline(question):
     if not out["tool_results"]:
         return {"answer": out["answer"], "verdict": "not_applicable"}
 
-    # Verify the answer against every tool result it was based on
+    # Judge 1 (deterministic): every number must exist in the source data
     verdicts = [verify_numbers(out["answer"], src) for src in out["tool_results"]]
-    overall = "pass" if all(v["verdict"] == "pass" for v in verdicts) else "fail"
+    numbers_ok = all(v["verdict"] == "pass" for v in verdicts)
 
-    return {"answer": out["answer"], "verdict": overall, "details": verdicts}
+    # Judge 2 (LLM): the reasoning must follow from the source data
+    # (only the first tool result for now — multi-source handling is backlog)
+    reasoning = verify_reasoning(out["answer"], out["tool_results"][0])
+    reasoning_ok = reasoning["verdict"] == "pass"
+
+    overall = "pass" if (numbers_ok and reasoning_ok) else "fail"
+
+    return {"answer": out["answer"], "verdict": overall,
+            "details": verdicts, "reasoning_check": reasoning}
 
 
 def scout_with_retry(question, max_attempts=2):
