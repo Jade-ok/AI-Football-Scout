@@ -1,69 +1,128 @@
 """Data layer for the AI Football Scout.
 
-Loads EPL player season stats from FBref (via soccerdata)
-and exposes them through get_player_stats().
+Reads EPL player season stats from a local SQLite database (data/stats.db,
+built from FBref by build_db.py) and exposes two functions:
+
+- get_player_stats(name): name -> that player's season stats   [lookup]
+- find_players(criteria): criteria -> ranked candidate list    [search]
+
+The data source is hidden behind these functions, so the storage can
+change (DataFrame -> SQLite today, more leagues tomorrow) without
+touching the agent, judges, or pipeline.
 """
 
-import soccerdata as sd
+import sqlite3
+from pathlib import Path
+
+# Path to the DB, relative to THIS file — works no matter where
+# the caller runs from (notebook, script, anywhere).
+DB_PATH = Path(__file__).parent / "stats.db"
 
 
-def load_data(season="2024-2025"):
-    # Data source is hidden behind this function,
-    # so we can swap FBref for another source (e.g. FPL API) later.
-    fbref = sd.FBref(leagues="ENG-Premier League", seasons=season)
-    return fbref.read_player_season_stats(stat_type="standard")
-
-
-# Load once when this module is imported.
-# Every call to get_player_stats() reuses this same DataFrame.
-df = load_data()
+def _connect():
+    # Small helper: open the DB and make rows readable by column name
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 def get_player_stats(name, season="2425", competition="ENG-Premier League"):
-    # 1. Filter by season first
-    try:
-        rows = df.xs(season, level="season")
-    except KeyError:
-        return {"error": f"No data for season {season}"}
+    """Look up one player's season stats by (possibly partial) name.
 
-    # 2. Search by name - strict match first, then fall back to looser matches
-    all_players = rows.index.get_level_values("player").unique()
+    Returns {"player", "season", "competition", "records": [...]}.
+    A mid-season transfer means 2+ records — never merged, so the
+    Judge can verify numbers against the original rows.
+    Errors come back as {"error": ...} dicts, never exceptions.
+    """
+    conn = _connect()
+    rows = conn.execute("SELECT * FROM players").fetchall()
+    conn.close()
 
-    # Step 1: whole-word match (treat hyphens as spaces)
-    matches = [p for p in all_players
+    all_names = sorted({r["name"] for r in rows})
+
+    # --- 3-tier name search: strict first, then looser ---
+    # Tier 1: whole-word match (treat hyphens as spaces)
+    matches = [p for p in all_names
                if name.lower() in p.lower().replace("-", " ").split()]
 
-    # Step 2: if nothing found, try substring match
+    # Tier 2: substring match
     if not matches:
-        matches = [p for p in all_players if name.lower() in p.lower()]
+        matches = [p for p in all_names if name.lower() in p.lower()]
 
-    # Step 3: if still nothing, compare with hyphens/spaces removed
-    # (e.g. "heungmin" matches "sonheungmin")
+    # Tier 3: match with hyphens/spaces removed ("heungmin" -> "sonheungmin")
     if not matches:
         squash = lambda s: s.lower().replace("-", "").replace(" ", "")
-        matches = [p for p in all_players if squash(name) in squash(p)]
+        matches = [p for p in all_names if squash(name) in squash(p)]
 
-    # Final safety net — return an error dict instead of crashing
+    # --- error-as-data, never crash ---
     if not matches:
         return {"error": f"Player '{name}' not found"}
     if len(matches) > 1:
         return {"error": "Multiple players matched — please be more specific",
                 "candidates": matches}
 
-    # 3. Return one record per team - do NOT merge rows
-    # (a mid-season transfer means two rows; keep them separate
-    #  so the Judge can verify numbers against the original data)
+    # --- one record per team row: transfers stay split ---
     player_name = matches[0]
-    player_rows = rows.xs(player_name, level="player")
     records = []
-    for idx, row in player_rows.iterrows():
-        team = idx[-1] if isinstance(idx, tuple) else idx  # if tuple, take the last part (team)
-        stats = {f"{c[0]}_{c[1]}" if c[1] else c[0]: v for c, v in row.items()}
-        records.append({"team": team, "stats": stats})
+    for r in rows:
+        if r["name"] == player_name:
+            stats = dict(r)              # all columns of this row
+            team = stats.pop("team")     # team goes to its own field
+            stats.pop("name")            # name is already in the envelope
+            records.append({"team": team, "stats": stats})
 
     return {
         "player": player_name,
         "season": season,
         "competition": competition,
-        "records": records,  # length 1 for one team, 2+ if transferred mid-season
+        "records": records,   # length 2+ if transferred mid-season
     }
+
+def find_players(position=None, max_age=None, min_minutes=900, limit=10):
+    """Search players by scouting criteria, best candidates first.
+
+    Ranking depends on position:
+    - "DF" -> defensive actions per 90 (tackles won + interceptions)
+    - anything else -> attacking output per 90 (goals + assists)
+    min_minutes=900 (10 full games) keeps small-sample flukes out.
+    """
+    conn = _connect()
+
+    # --- pick the ranking query by position ---
+    if position == "DF":
+        # defenders: rank by defensive actions, needs the defense table (JOIN)
+        query = """
+            SELECT p.name, p.team, p.position, p.age, p.minutes,
+                   d.tackles_won, d.interceptions,
+                   ROUND((d.tackles_won + d.interceptions) / d.nineties, 2) AS score
+            FROM players p
+            JOIN defense d ON p.name = d.name AND p.team = d.team
+            WHERE p.minutes >= ?
+        """
+        col = "p."   # this query uses table aliases, filters need the prefix
+    else:
+        # default: rank by attacking output, players table alone is enough
+        query = """
+            SELECT name, team, position, age, minutes, goals, assists,
+                   ROUND((goals + assists) * 90.0 / minutes, 2) AS score
+            FROM players
+            WHERE minutes >= ?
+        """
+        col = ""     # no alias here, plain column names
+
+    params = [min_minutes]
+
+    # --- optional filters, added only if the caller asks ---
+    if position:
+        query += f" AND {col}position LIKE ?"
+        params.append(f"%{position}%")
+    if max_age:
+        query += f" AND {col}age <= ?"
+        params.append(max_age)
+
+    query += " ORDER BY score DESC LIMIT ?"
+    params.append(limit)
+
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

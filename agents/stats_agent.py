@@ -38,7 +38,10 @@ You answer questions about player statistics.
 ## When data is missing
 6. If the database has no data for something, say so plainly.
 7. Never assert facts that are not in the tool results — no data for X
-   does not mean X is false."""
+   does not mean X is false.
+8. If the user provides a common or incomplete name and you are unsure 
+   which player they mean, do not guess. Ask the user to clarify the specific player or team."""
+
 
 get_player_stats_declaration = {
     "name": "get_player_stats",
