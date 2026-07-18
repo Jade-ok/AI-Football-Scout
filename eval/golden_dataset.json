@@ -46,5 +46,12 @@
     "player": "Son",
     "answer": "Son Heung-min scored his goals mostly from penalties, showing his open-play threat has vanished.",
     "expected": "fail"
+  },
+  {
+    "id": "question_number_confirmed",
+    "tests": "Agent confirms a fake number taken from the user's question - judge 1 exempts question numbers, so judge 2 must catch this",
+    "player": "Saka",
+    "answer": "Yes, Saka scored 93 goals this season, an incredible tally.",
+    "expected": "fail"
   }
 ]
