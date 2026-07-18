@@ -16,10 +16,14 @@ def extract_numbers(text):
     return [float(n.replace(",", "")) for n in raw]
 
 
-def verify_numbers(answer_text, source_record):
+def verify_numbers(answer_text, source_record, question=None):
     """Check every number in the answer against the source data.
 
-    source_record: the dict returned by get_player_stats
+    source_record comes in two shapes:
+    - dict from get_player_stats: {"records": [{"stats": {...}}, ...]}
+    - list from find_players:     [{...}, {...}, ...]
+    question: the user's original question. Numbers echoed from it
+    (e.g. "under 25") are not stat claims and are exempt from checking.
     Returns a verdict dict — never raises.
 
     Known limits (by design, v1):
@@ -29,11 +33,28 @@ def verify_numbers(answer_text, source_record):
     """
     claimed = extract_numbers(answer_text)
 
+    # Numbers the user themselves said (e.g. "under 25") are not
+    # stat claims — echoing the question must not fail the answer.
+    question_numbers = extract_numbers(question) if question else []
+    claimed = [n for n in claimed if n not in question_numbers]
+
+    # --- collect every number from the source, whatever its shape ---
+    # The judge does not care which tool produced the data —
+    # it only needs the numbers inside, so handle both shapes.
     truth = []
-    for rec in source_record.get("records", []):
-        for v in rec["stats"].values():
-            if isinstance(v, (int, float)):
-                truth.append(float(v))
+
+    if isinstance(source_record, dict):
+        # envelope shape: open "records", read each team's stats
+        for rec in source_record.get("records", []):
+            for v in rec["stats"].values():
+                if isinstance(v, (int, float)):
+                    truth.append(float(v))
+    elif isinstance(source_record, list):
+        # plain list shape: each row is one player, read its values directly
+        for row in source_record:
+            for v in row.values():
+                if isinstance(v, (int, float)):
+                    truth.append(float(v))
 
     unverified = [n for n in claimed
                   if not any(math.isclose(n, t, rel_tol=0.01) for t in truth)]

@@ -18,20 +18,24 @@ def build():
 
     # --- players table (standard stats) ---
     df = fbref.read_player_season_stats(stat_type="standard").reset_index()
-    players = df[[("player", ""), ("team", ""), ("pos", ""), ("age", ""),
+    players = df[[("league", ""), ("season", ""),       # context columns — kept!
+                  ("player", ""), ("team", ""), ("pos", ""), ("age", ""),
                   ("Playing Time", "Min"), ("Performance", "Gls"),
                   ("Performance", "Ast"), ("Per 90 Minutes", "G+A"),
                   ("Performance", "PK")]].copy()
-    players.columns = ["name", "team", "position", "age", "minutes",
+    players.columns = ["competition", "season",
+                       "name", "team", "position", "age", "minutes",
                        "goals", "assists", "ga_per90", "pk"]
     players.to_sql("players", conn, if_exists="replace", index=False)
 
     # --- defense table (from misc stats) ---
     df_misc = fbref.read_player_season_stats(stat_type="misc").reset_index()
-    defense = df_misc[[("player", ""), ("team", ""), ("90s", ""),
+    defense = df_misc[[("league", ""), ("season", ""),      # context columns — kept!
+                       ("player", ""), ("team", ""), ("90s", ""),
                        ("Performance", "TklW"), ("Performance", "Int"),
                        ("Performance", "Fls"), ("Performance", "CrdY")]].copy()
-    defense.columns = ["name", "team", "nineties",
+    defense.columns = ["competition", "season",
+                       "name", "team", "nineties",
                        "tackles_won", "interceptions", "fouls", "yellow_cards"]
     defense.to_sql("defense", conn, if_exists="replace", index=False)
 

@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-from data.loader import get_player_stats
+from data.loader import get_player_stats, find_players
 
 
 load_dotenv(override=True)
@@ -25,21 +25,23 @@ SYSTEM_PROMPT = f"""You are a scouting assistant for {TEAM}'s recruitment depart
 You answer questions about player statistics.
 
 ## Tool use
-1. Use the get_player_stats tool for any question about a player's stats.
-2. Base every number on tool results, never on memory.
+1. Use get_player_stats when the user asks about a SPECIFIC named player.
+2. Use find_players when the user asks to find or recommend players
+   by criteria without naming one.
+3. Base every number on tool results, never on memory.
 
 ## Reporting rules
-3. Write all statistics as digits (e.g. "6 goals"), never as words.
-4. If a player played for multiple teams in one season, report each
+4. Write all statistics as digits (e.g. "6 goals"), never as words.
+5. If a player played for multiple teams in one season, report each
    team's numbers separately. Never merge them into a single total.
-5. Name the scope of every number (team, season, competition),
+6. Name the scope of every number (team, season, competition),
    e.g. "6 goals for Arsenal in the 2024-25 Premier League season".
 
 ## When data is missing
-6. If the database has no data for something, say so plainly.
-7. Never assert facts that are not in the tool results — no data for X
+7. If the database has no data for something, say so plainly.
+8. Never assert facts that are not in the tool results — no data for X
    does not mean X is false.
-8. If the user provides a common or incomplete name and you are unsure 
+9. If the user provides a common or incomplete name and you are unsure 
    which player they mean, do not guess. Ask the user to clarify the specific player or team."""
 
 
@@ -63,7 +65,35 @@ get_player_stats_declaration = {
     },
 }
 
-tools = types.Tool(function_declarations=[get_player_stats_declaration])
+
+find_players_declaration = {
+    "name": "find_players",
+    "description": "Search for players matching scouting criteria and rank "
+                   "them. Use this when the user asks to FIND, RECOMMEND, or "
+                   "COMPARE players by conditions (position, age, performance) "
+                   "WITHOUT naming a specific player. If the user names a "
+                   "specific player, use get_player_stats instead.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "position": {"type": "string",
+                         "description": "Position filter: 'FW', 'MF', or 'DF'. "
+                                        "'DF' ranks by defensive actions; "
+                                        "others rank by attacking output."},
+            "max_age": {"type": "integer",
+                        "description": "Only players this age or younger."},
+            "min_minutes": {"type": "integer",
+                            "description": "Minimum minutes played. "
+                                           "Default 900 (10 full games)."},
+            "limit": {"type": "integer",
+                      "description": "How many candidates to return. Default 10."},
+        },
+        "required": [],
+    },
+}
+
+tools = types.Tool(function_declarations=[get_player_stats_declaration,
+                                          find_players_declaration])
 config = types.GenerateContentConfig(
     tools=[tools],
     system_instruction=SYSTEM_PROMPT,
@@ -94,7 +124,10 @@ def ask_stats_agent(question, max_rounds=5, verbose=True):
 
         if verbose:
             print(f"  [tool call] {fc.name}({dict(fc.args)})")
-        result = get_player_stats(**fc.args)
+        # Run whichever tool the model asked for (fc.name tells us which)
+        TOOL_FUNCTIONS = {"get_player_stats": get_player_stats,
+                          "find_players": find_players}
+        result = TOOL_FUNCTIONS[fc.name](**fc.args)
         tool_results.append(result)  # keep a copy before handing it to the model
         contents.append(resp.candidates[0].content)
         contents.append(types.Content(role="tool", parts=[

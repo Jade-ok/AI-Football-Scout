@@ -93,6 +93,7 @@ def find_players(position=None, max_age=None, min_minutes=900, limit=10):
         # defenders: rank by defensive actions, needs the defense table (JOIN)
         query = """
             SELECT p.name, p.team, p.position, p.age, p.minutes,
+                   p.season, p.competition,
                    d.tackles_won, d.interceptions,
                    ROUND((d.tackles_won + d.interceptions) / d.nineties, 2) AS score
             FROM players p
@@ -104,6 +105,7 @@ def find_players(position=None, max_age=None, min_minutes=900, limit=10):
         # default: rank by attacking output, players table alone is enough
         query = """
             SELECT name, team, position, age, minutes, goals, assists,
+                   season, competition,
                    ROUND((goals + assists) * 90.0 / minutes, 2) AS score
             FROM players
             WHERE minutes >= ?
