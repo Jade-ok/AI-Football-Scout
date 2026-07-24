@@ -32,7 +32,8 @@ Design principles baked into the data layer:
 
 ## Evaluation
 
-`eval/` contains a golden dataset of cases with pass/fail ground truth and an automated runner (`eval/evaluate.py`). Each case runs inside its own try/except with rate-limit backoff, so a single API error cannot wipe the results of completed cases. That safeguard exists because a 429 error once did exactly that.
+eval/ contains a golden dataset of cases with pass/fail ground truth and an automated runner (eval/evaluate.py). Each case runs inside its own try/except, with a fixed delay between cases to stay under the API rate limit, so a single API error cannot wipe the results of completed cases. That safeguard exists because a 429 error once did exactly that.
+
 
 ## Project Structure
 
