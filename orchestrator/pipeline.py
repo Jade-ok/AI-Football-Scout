@@ -16,13 +16,13 @@ def scout_pipeline(question):
         return {"answer": out["answer"], "verdict": "not_applicable"}
 
     # Judge 1 (deterministic): every number must exist in the source data
-    verdicts = [verify_numbers(out["answer"], src, question=question)
+    verdicts = [verify_numbers(out["answer"], src["result"], question=question)
                 for src in out["tool_results"]]
     numbers_ok = all(v["verdict"] == "pass" for v in verdicts)
 
     # Judge 2 (LLM): the reasoning must follow from the source data
     # (only the first tool result for now — multi-source handling is backlog)
-    reasoning = verify_reasoning(out["answer"], out["tool_results"][0])
+    reasoning = verify_reasoning(out["answer"], out["tool_results"][0]["result"])
     reasoning_ok = reasoning["verdict"] == "pass"
 
     overall = "pass" if (numbers_ok and reasoning_ok) else "fail"

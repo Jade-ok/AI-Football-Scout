@@ -128,7 +128,9 @@ def ask_stats_agent(question, max_rounds=5, verbose=True):
         TOOL_FUNCTIONS = {"get_player_stats": get_player_stats,
                           "find_players": find_players}
         result = TOOL_FUNCTIONS[fc.name](**fc.args)
-        tool_results.append(result)  # keep a copy before handing it to the model
+        # Record which tool produced this result, so a trajectory eval
+        # can verify tool selection, not just the final answer
+        tool_results.append({"tool": fc.name, "result": result})        
         contents.append(resp.candidates[0].content)
         contents.append(types.Content(role="tool", parts=[
             types.Part.from_function_response(
