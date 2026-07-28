@@ -1,0 +1,22 @@
+[
+  {
+    "id": "lookup_by_name",
+    "question": "How many goals did Saka score this season?",
+    "expected_tools": ["get_player_stats"]
+  },
+  {
+    "id": "search_by_condition",
+    "question": "Who are the best young forwards under 25?",
+    "expected_tools": ["find_players"]
+  },
+  {
+    "id": "search_defenders",
+    "question": "Find me young defenders with strong defensive numbers.",
+    "expected_tools": ["find_players"]
+  },
+  {
+    "id": "compare_named_player",
+    "question": "Is Saka one of the best young forwards this season?",
+    "expected_tools": ["get_player_stats", "find_players"]
+  }
+]
