@@ -35,7 +35,7 @@ def get_player_stats(name, season="2425", competition="ENG-Premier League"):
     Errors come back as {"error": ...} dicts, never exceptions.
     """
     conn = _connect()
-    rows = conn.execute("SELECT * FROM players").fetchall()
+    rows = conn.execute("SELECT * FROM outfield").fetchall()
     conn.close()
 
     all_names = sorted({r["name"] for r in rows})
@@ -90,24 +90,24 @@ def find_players(position=None, max_age=None, min_minutes=900, limit=10):
 
     # --- pick the ranking query by position ---
     if position == "DF":
-        # defenders: rank by defensive actions, needs the defense table (JOIN)
+        # defenders: rank by defensive actions. All stats now live in one
+        # table, so the old players/defense JOIN is gone.
         query = """
-            SELECT p.name, p.team, p.position, p.age, p.minutes,
-                   p.season, p.competition,
-                   d.tackles_won, d.interceptions,
-                   ROUND((d.tackles_won + d.interceptions) / d.nineties, 2) AS score
-            FROM players p
-            JOIN defense d ON p.name = d.name AND p.team = d.team
-            WHERE p.minutes >= ?
+            SELECT name, team, position, age, minutes,
+                   season, competition,
+                   tackles_won, interceptions,
+                   ROUND((tackles_won + interceptions) / nineties, 2) AS score
+            FROM outfield
+            WHERE minutes >= ?
         """
-        col = "p."   # this query uses table aliases, filters need the prefix
+        col = ""     # single table, no alias prefix needed
     else:
         # default: rank by attacking output, players table alone is enough
         query = """
             SELECT name, team, position, age, minutes, goals, assists,
                    season, competition,
                    ROUND((goals + assists) * 90.0 / minutes, 2) AS score
-            FROM players
+            FROM outfield
             WHERE minutes >= ?
         """
         col = ""     # no alias here, plain column names
