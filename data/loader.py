@@ -35,7 +35,9 @@ def get_player_stats(name, season="2425", competition="ENG-Premier League"):
     Errors come back as {"error": ...} dicts, never exceptions.
     """
     conn = _connect()
+    # search both tables: field players and goalkeepers live apart now
     rows = conn.execute("SELECT * FROM outfield").fetchall()
+    rows += conn.execute("SELECT * FROM keepers").fetchall()
     conn.close()
 
     all_names = sorted({r["name"] for r in rows})
@@ -115,8 +117,12 @@ def find_players(position=None, max_age=None, min_minutes=900, limit=10):
     params = [min_minutes]
 
     # --- optional filters, added only if the caller asks ---
-    if position:
-        query += f" AND {col}position LIKE ?"
+    if position == "FW":
+        # FBref labels some attackers as MF (Salah). Cast a wide net;
+        # weak candidates sink to the bottom of the ranking anyway.
+        query += " AND (position LIKE '%FW%' OR position LIKE '%MF%')"
+    elif position:
+        query += " AND position LIKE ?"
         params.append(f"%{position}%")
     if max_age:
         query += f" AND {col}age <= ?"

@@ -121,6 +121,8 @@ def build():
         keyed = pd.concat([keyed, pick(df, cols)], axis=1)
         base = base.merge(keyed, on=["name", "team"], how="left")
 
+    # goalkeepers live in the keepers table, not here
+    base = base[base["position"] != "GK"]
     base.to_sql("outfield", conn, if_exists="replace", index=False)
 
     # --- keepers table ---
