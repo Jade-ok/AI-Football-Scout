@@ -104,11 +104,16 @@ def find_players(position=None, max_age=None, min_minutes=900, limit=10):
         """
         col = ""     # single table, no alias prefix needed
     else:
-        # default: rank by attacking output, players table alone is enough
+        # League-average non-penalty G+A per 90 for FW/MF, min 900 minutes.
+        # Source: SUM(npg+assists)*90/SUM(minutes) over the 2425 season.
+        # Recompute when the season data changes.
         query = """
-            SELECT name, team, position, age, minutes, goals, assists,
+            SELECT name, team, position, age, minutes, npg, assists,
                    season, competition,
-                   ROUND((goals + assists) * 90.0 / minutes, 2) AS score
+                   ROUND(
+                     (npg + assists + 0.315 * 15) / (nineties + 15),
+                     2
+                   ) AS score
             FROM outfield
             WHERE minutes >= ?
         """
