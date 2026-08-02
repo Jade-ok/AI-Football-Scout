@@ -91,7 +91,32 @@ def find_players(position=None, max_age=None, min_minutes=900, limit=10):
     conn = _connect()
 
     # --- pick the ranking query by position ---
-    if position == "DF":
+    if position == "GK":
+        # goalkeepers live in their own table with their own stats.
+        # Score = shrinkage-adjusted save percentage:
+        # every keeper gets 50 phantom shots saved at the league
+        # average rate (68.1%), so small samples pull toward average.
+        # clean_sheets and ga90 are returned for reference but do not
+        # affect the score (they reflect the defence, not the keeper).
+        query = """
+            SELECT name, team, position, age, minutes,
+                   season, competition,
+                   saves, shots_on_target_against,
+                   ROUND(saves * 100.0 / shots_on_target_against, 1)
+                     AS raw_save_pct,
+                   clean_sheets, goals_against_per90,
+                   ROUND(
+                     (saves + 0.681 * 50) / (shots_on_target_against + 50) * 100,
+                     1
+                   ) AS score
+            FROM keepers
+            WHERE minutes >= ?
+            ORDER BY score DESC LIMIT ?
+        """
+        rows = conn.execute(query, [min_minutes, limit]).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+    elif position == "DF":
         # defenders: rank by defensive actions. All stats now live in one
         # table, so the old players/defense JOIN is gone.
         query = """

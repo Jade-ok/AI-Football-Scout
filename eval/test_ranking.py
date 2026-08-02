@@ -5,6 +5,8 @@ that silently breaks them gets caught:
 - Salah must rank first among attackers (MF label must not hide him)
 - Muniz must not crack the top 10 (small-sample shrinkage works)
 - goalkeepers must never appear in outfield searches
+- score formulas must use npg (FW) and saves/SoTA (GK), not raw stats
+- GK ranking applies shot-count shrinkage (Raya above Dubravka)
 
 No LLM, no API calls — runs in milliseconds.
 Run from project root: python -m eval.test_ranking
@@ -41,6 +43,23 @@ def run():
     s = get_player_stats("Salah")["records"][0]["stats"]
     expected = round((s["npg"] + s["assists"] + 0.315 * 15) / (s["nineties"] + 15), 2)
     results.append(("score_uses_npg_not_goals", salah["score"] == expected))
+
+    # 6. GK search returns keepers with adjusted save pct as score.
+    # Raya (full season) must outrank Dubravka (10 games) even though
+    # their raw save percentages are close — shrinkage at work.
+    gks = find_players(position="GK", limit=15)
+    gk_names = [p["name"] for p in gks]
+    raya = gk_names.index("David Raya")
+    dubravka = gk_names.index("Martin Dúbravka")
+    results.append(("gk_shrinkage_orders_raya_above_dubravka", raya < dubravka))
+
+    # 7. GK score is computed from saves/SoTA, not FBref's save_pct.
+    # FBref's save_pct is (SoTA-GA)/SoTA, so own goals inflate GA and
+    # unfairly punish the keeper (e.g. Verbruggen -5.0 in 2425).
+    r = next(p for p in gks if p["name"] == "David Raya")
+    expected = round((r["saves"] + 0.681 * 50) / (r["shots_on_target_against"] + 50) * 100, 1)
+    results.append(("gk_score_uses_shrinkage_formula", r["score"] == expected))
+
 
     passed = 0
     for name, ok in results:
