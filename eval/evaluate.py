@@ -13,11 +13,15 @@ which makes this file usable as a regression test.
 import json
 import sys
 import time
+import os
+
+EVAL_DELAY = float(os.environ.get("EVAL_DELAY", 15))
+
+
 from pathlib import Path
 
 from data.loader import get_player_stats
 from judges.llm_judge import verify_reasoning
-
 GOLDEN_PATH = Path(__file__).parent / "golden_dataset.json"
 THRESHOLD = 0.88
 
@@ -49,7 +53,7 @@ def evaluate_judge(cases, verbose=True):
             errors.append({"id": case["id"], "error": str(e)[:100]})
             if verbose:
                 print(f"⚠️ {case['id']}: API error, skipped")
-            time.sleep(15)
+            time.sleep(EVAL_DELAY)
             continue
 
         ok = got == case["expected"]
@@ -60,7 +64,7 @@ def evaluate_judge(cases, verbose=True):
             mismatches.append({"id": case["id"],
                                "expected": case["expected"], "got": got})
 
-        time.sleep(15)   # free tier: 5 requests/min -> stay under the limit
+        time.sleep(EVAL_DELAY)   # free tier: 5 requests/min -> stay under the limit
 
     passed = len(cases) - len(mismatches) - len(errors)
 

@@ -12,6 +12,9 @@ the question here is tool selection, not call efficiency.
 import json
 import sys
 import time
+import os
+
+EVAL_DELAY = float(os.environ.get("EVAL_DELAY", 15))
 from pathlib import Path
 
 from agents.stats_agent import ask_stats_agent
@@ -53,7 +56,7 @@ def evaluate_trajectory(cases, verbose=True):
             mismatches.append({"id": case["id"],
                                "expected": sorted(expected),
                                "called": sorted(called)})
-        time.sleep(15)   # respect the free-tier rate limit, like the judge eval
+        time.sleep(EVAL_DELAY)   # respect the free-tier rate limit, like the judge eval
 
     passed = len(cases) - len(mismatches) - len(errors)
 
