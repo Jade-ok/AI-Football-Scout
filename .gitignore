@@ -6,3 +6,4 @@ __pycache__/
 notebooks/downloaded_files/
 pyvenv.cfg
 data/stats.db
+*.db.backup
