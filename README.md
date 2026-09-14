@@ -39,7 +39,7 @@ flowchart LR
 ```
 
 **Orchestrator** (`orchestrator/pipeline.py`)
-Connects the components and owns the retry loop. When a judge rejects an answer, the orchestrator passes the failure reason back to the agent and retries up to a bounded number of attempts.
+Connects the components and owns the retry loop. Both judges run on every answer and their verdicts are combined, so a single failure on either side rejects the answer. On rejection the orchestrator appends the specific unverified numbers to the question and asks again, up to a bounded number of attempts. Questions that trigger no tool call have nothing to verify and are returned unchecked with an explicit `not_applicable` verdict rather than a silent pass.
 
 **Stats Agent** (`agents/stats_agent.py`)
 Retrieves player statistics using multi-round function calling against Gemini. The agent decides which tools to call and may call several in sequence before answering.
@@ -58,9 +58,9 @@ The system is tested at three levels rather than by manual inspection.
 | --- | --- | --- |
 | Output quality | `eval/evaluate.py` | Runs a golden dataset of question and answer pairs, reports a pass rate, and exits non-zero when the pass rate falls below the threshold |
 | Agent behaviour | `eval/evaluate_trajectory.py` | Compares the set of tools the agent actually called against the expected set, verifying reasoning path without any additional model calls |
-| Scoring logic | `eval/test_ranking.py` | Unit tests that lock in the ranking formulas, covering returned values and not only rank order |
+| Scoring logic | `eval/test_ranking.py` | Assertions that lock in the ranking formulas, checking recomputed score values and not only rank order. No API calls, runs in milliseconds |
 
-Failures in the golden dataset run are isolated per case so that one bad case does not abort the run. Requests are spaced out to avoid API rate limiting, which otherwise surfaces as a silent wrong result rather than an error.
+Failures in the golden dataset run are isolated per case so that one bad case does not abort the run, and API errors are reported separately from genuine mismatches because both lower the pass rate for very different reasons. Requests are spaced out to avoid rate limiting, which otherwise surfaces as a silent wrong result rather than an error.
 
 ## Data
 
@@ -87,13 +87,26 @@ Clean sheets are excluded because they measure the defence more than the keeper.
 ## Project structure
 
 ```
-agents/          Stats Agent and its tool definitions
-judges/          Deterministic and LLM verification
-orchestrator/    Pipeline and retry loop
-data/            Database build script and SQLite file
-eval/            Golden dataset, trajectory, and unit tests
-notebooks/       Prototyping and exploration
+agents/
+  stats_agent.py          Function calling agent over the stats tools
+judges/
+  deterministic.py        Regex extraction and numeric verification
+  llm_judge.py            Structured JSON verdict on reasoning
+orchestrator/
+  pipeline.py             scout_pipeline and scout_with_retry
+data/
+  build_db.py             Builds stats.db from the FBref cache
+  loader.py               Query layer, get_player_stats and find_players
+eval/
+  evaluate.py             Golden dataset run with a pass-rate gate
+  evaluate_trajectory.py  Tool selection comparison
+  test_ranking.py         Ranking formula assertions
+  golden_dataset.json     Labelled question and answer cases
+  trajectory_dataset.json Expected tool calls per question
+notebooks/                Prototyping, one notebook per component
 ```
+
+The data source sits behind `loader.py`, so storage can change without touching the agent, the judges, or the pipeline.
 
 ## Getting started
 
@@ -106,40 +119,56 @@ pip install -r requirements.txt
 export GEMINI_API_KEY=your_key_here
 ```
 
-Build the database. This downloads from FBref on first run and caches locally.
+Build the database. This downloads from FBref on first run and caches locally. It only needs to be rerun for a new season or a new stat table.
 
 ```bash
 python data/build_db.py
 ```
 
-Run the pipeline.
+Ask a question. The pipeline is a library module, so it is imported rather than run as a script.
 
-```bash
-python orchestrator/pipeline.py
+```python
+from orchestrator.pipeline import scout_with_retry
+
+result = scout_with_retry("Which forwards had the best minutes-adjusted output last season?")
+print(result["answer"], result["verdict"], result["attempts"])
 ```
 
-Run the evaluations.
+Run the evaluations from the project root.
 
 ```bash
-python eval/evaluate.py
-python eval/evaluate_trajectory.py
-python -m pytest eval/test_ranking.py
+python -m eval.evaluate
+python -m eval.evaluate_trajectory
+python -m eval.test_ranking
+```
+
+The two API-backed evaluations pause between cases to stay under the rate limit. Override the interval with `EVAL_DELAY` in seconds, which is useful when a higher quota is available.
+
+```bash
+EVAL_DELAY=2 python -m eval.evaluate
 ```
 
 ## Roadmap
 
-Working today.
+### Working today
 
-- End to end pipeline with retry loop
+- End to end pipeline with a retry loop and combined judge verdicts
 - Stats Agent with multi-round function calling
 - Deterministic and LLM judges
-- Golden dataset, trajectory, and unit test evaluation
+- Golden dataset, trajectory, and ranking evaluation with a pass-rate gate
 
-Planned.
+### Next
 
 - A `sort_by` parameter, so that "find me a striker" and "find me a creative player" are not collapsed into one combined score
-- Analysis Agent for longer scouting reports
+- Revised ranking formulas using shooting quality and playing time weighting, rather than output volume alone
+- Multi-source reasoning verification, so answers built from several lookups are checked against every source instead of the first one
+- Migration of the ranking assertions to pytest, for parameterised cases and standard reporting
 - 2025-26 season data
+
+### Later
+
+- Analysis Agent that turns verified statistics into a written scouting report
+- Continuous integration that runs the evaluation suite on every push and blocks a merge when the pass rate drops
 - Input validation and prompt injection handling
 - Additional leagues, starting with La Liga and then MLS
 - Configurable club, so the scout persona is not fixed to one team
