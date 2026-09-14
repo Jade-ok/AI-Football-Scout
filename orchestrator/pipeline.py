@@ -15,10 +15,13 @@ def scout_pipeline(question):
     if not out["tool_results"]:
         return {"answer": out["answer"], "verdict": "not_applicable"}
 
-    # Judge 1 (deterministic): every number must exist in the source data
-    verdicts = [verify_numbers(out["answer"], src["result"], question=question)
-                for src in out["tool_results"]]
-    numbers_ok = all(v["verdict"] == "pass" for v in verdicts)
+    # Judge 1 (deterministic): every number must exist in at least one source.
+    # Checked against all sources at once — a comparison answer cites numbers
+    # from different lookups, so no single source contains all of them.
+    numbers = verify_numbers(out["answer"],
+                             *(src["result"] for src in out["tool_results"]),
+                             question=question)
+    numbers_ok = numbers["verdict"] == "pass"
 
     # Judge 2 (LLM): the reasoning must follow from the source data
     # (only the first tool result for now — multi-source handling is backlog)
@@ -28,7 +31,7 @@ def scout_pipeline(question):
     overall = "pass" if (numbers_ok and reasoning_ok) else "fail"
 
     return {"answer": out["answer"], "verdict": overall,
-            "details": verdicts, "reasoning_check": reasoning}
+            "details": numbers, "reasoning_check": reasoning}
 
 
 def scout_with_retry(question, max_attempts=2):
@@ -40,7 +43,7 @@ def scout_with_retry(question, max_attempts=2):
             return result
 
         # Failed: tell the agent what could not be verified and retry
-        bad = [n for v in result["details"] for n in v["unverified"]]
+        bad = result["details"]["unverified"]
         question = (f"{question}\n\nYour previous answer contained numbers "
                     f"that could not be verified against the database: {bad}. "
                     f"Answer again using ONLY numbers from the tool results.")

@@ -16,10 +16,13 @@ def extract_numbers(text):
     return [float(n.replace(",", "")) for n in raw]
 
 
-def verify_numbers(answer_text, source_record, question=None):
+def verify_numbers(answer_text, *source_records, question=None):
     """Check every number in the answer against the source data.
 
-    source_record comes in two shapes:
+    source_records: one or more tool results. An answer built from several
+    lookups (e.g. comparing two players) cites numbers from different
+    sources, so each number only has to appear in one of them.
+    Each source comes in two shapes:
     - dict from get_player_stats: {"records": [{"stats": {...}}, ...]}
     - list from find_players:     [{...}, {...}, ...]
     question: the user's original question. Numbers echoed from it
@@ -38,23 +41,24 @@ def verify_numbers(answer_text, source_record, question=None):
     question_numbers = extract_numbers(question) if question else []
     claimed = [n for n in claimed if n not in question_numbers]
 
-    # --- collect every number from the source, whatever its shape ---
+    # --- collect every number from every source, whatever its shape ---
     # The judge does not care which tool produced the data —
     # it only needs the numbers inside, so handle both shapes.
     truth = []
 
-    if isinstance(source_record, dict):
-        # envelope shape: open "records", read each team's stats
-        for rec in source_record.get("records", []):
-            for v in rec["stats"].values():
-                if isinstance(v, (int, float)):
-                    truth.append(float(v))
-    elif isinstance(source_record, list):
-        # plain list shape: each row is one player, read its values directly
-        for row in source_record:
-            for v in row.values():
-                if isinstance(v, (int, float)):
-                    truth.append(float(v))
+    for source_record in source_records:
+        if isinstance(source_record, dict):
+            # envelope shape: open "records", read each team's stats
+            for rec in source_record.get("records", []):
+                for v in rec["stats"].values():
+                    if isinstance(v, (int, float)):
+                        truth.append(float(v))
+        elif isinstance(source_record, list):
+            # plain list shape: each row is one player, read its values directly
+            for row in source_record:
+                for v in row.values():
+                    if isinstance(v, (int, float)):
+                        truth.append(float(v))
 
     unverified = [n for n in claimed
                   if not any(math.isclose(n, t, rel_tol=0.01) for t in truth)]
