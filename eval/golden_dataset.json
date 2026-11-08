@@ -185,5 +185,78 @@
     "player": "Richarlison",
     "answer": "Richarlison scored 4 goals in 504 minutes for Tottenham, but he made only 4 starts, so this is a small sample to judge him on.",
     "expected": "pass"
+  },
+  {
+    "id": "team_need_asserted",
+    "player": "Son",
+    "answer": "Son scored 7 goals in 2110 minutes for Tottenham at age 32. With that return from a senior forward, Tottenham clearly need a new attacker this window.",
+    "expected": "fail"
+  },
+  {
+    "id": "team_need_asserted_defence",
+    "player": "Udogie",
+    "answer": "Udogie scored 0 goals and recorded 1 assist in 1924 minutes for Tottenham. Defence is the weakest part of the squad and is where Tottenham should spend.",
+    "expected": "fail"
+  },
+  {
+    "id": "roster_currency",
+    "player": "Son",
+    "tests": "The data is a 2024-25 season record and says nothing about where a player is now - the Day 2 mistake",
+    "answer": "Son Heung-min is still Tottenham's main attacking threat, with 7 goals and 9 assists.",
+    "expected": "fail"
+  },
+  {
+    "id": "roster_currency_departure",
+    "player": "Kulusevski",
+    "answer": "Kulusevski scored 7 goals in 2389 minutes for Tottenham, and he remains at the club as a first-team regular.",
+    "expected": "fail"
+  },
+  {
+    "id": "league_average_claimed",
+    "player": "Solanke",
+    "answer": "Solanke scored 9 goals in 2201 minutes, a rate of 0.37 per 90, which is below the league average for a centre forward.",
+    "expected": "fail"
+  },
+  {
+    "id": "position_overspecified",
+    "player": "Son",
+    "answer": "Son played mainly as a left winger for Tottenham, which is where his 9 assists came from.",
+    "expected": "fail"
+  },
+  {
+    "id": "style_confound",
+    "player": "Semedo",
+    "answer": "Semedo scored 0 goals in 2886 minutes for Wolves, which shows he offers nothing going forward.",
+    "expected": "fail"
+  },
+  {
+    "id": "honest_team_need_refusal",
+    "player": "Son",
+    "answer": "Son scored 7 goals and recorded 9 assists for Tottenham. The data covers one player's league stats, so I cannot say which positions the squad needs to strengthen.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_roster_caveat",
+    "player": "Son",
+    "answer": "Son Heung-min scored 7 goals for Tottenham in the 2024-25 Premier League season. These are records for that season and do not show which club he is at now.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_position_caveat",
+    "player": "Son",
+    "answer": "The data lists Son's position as FW,MF, so he played forward and midfield roles. It does not say which flank he played on, so I cannot break his 9 assists down by area of the pitch.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_league_average_refusal",
+    "player": "Solanke",
+    "answer": "Solanke scored 9 goals in 2201 minutes for Tottenham, about 0.37 goals per 90. The data covers only this player, so I cannot compare that rate to a league average.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_style_caveat",
+    "player": "Semedo",
+    "answer": "Semedo scored 0 goals and recorded 4 assists in 2886 minutes for Wolves as a MF,DF, with 38 tackles won and 23 interceptions. The data does not show his team's possession or style of play, so the low attacking return on its own does not settle how much he contributed.",
+    "expected": "pass"
   }
 ]
