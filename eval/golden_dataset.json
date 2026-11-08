@@ -6,15 +6,106 @@
     "expected": "fail"
   },
   {
-    "id": "honest_two_clubs",
-    "player": "Rashford",
-    "answer": "Marcus Rashford scored 4 goals for Manchester Utd and 2 goals for Aston Villa in the 2024-25 Premier League season.",
-    "expected": "pass"
+    "id": "data_denial_keeper",
+    "player": "Ramsdale",
+    "answer": "Ramsdale made 123 saves for Southampton. The 23 losses must be a data entry problem, as no first-choice keeper loses that many.",
+    "expected": "fail"
+  },
+  {
+    "id": "data_denial_penalty",
+    "player": "Haaland",
+    "answer": "Haaland scored 22 goals for Manchester City. The row showing 4 penalty attempts against 3 scored is clearly a logging error, since he does not miss penalties.",
+    "expected": "fail"
   },
   {
     "id": "unsupported_narrative",
     "player": "Rashford",
     "answer": "Rashford scored 4 goals for Manchester Utd and 2 for Aston Villa. His decline at United is clearly why they sold him.",
+    "expected": "fail"
+  },
+  {
+    "id": "unsupported_narrative_injury",
+    "player": "Richarlison",
+    "answer": "Richarlison scored 4 goals in 504 minutes for Tottenham. He played so little because he was injured for most of the season.",
+    "expected": "fail"
+  },
+  {
+    "id": "unsupported_narrative_manager",
+    "player": "Ferguson",
+    "answer": "Evan Ferguson scored 1 goal for Brighton and none for West Ham. The manager at West Ham never trusted him, which is why he did not score.",
+    "expected": "fail"
+  },
+  {
+    "id": "causal_leap",
+    "player": "Saka",
+    "answer": "Saka scored 6 goals. His low total proves Arsenal's tactics wasted him this season.",
+    "expected": "fail"
+  },
+  {
+    "id": "causal_leap_small_sample",
+    "player": "Malen",
+    "answer": "Malen scored 3 goals in 305 minutes for Aston Villa, a rate of 0.89 per 90. That rate proves he should be starting every match.",
+    "expected": "fail"
+  },
+  {
+    "id": "causal_leap_keeper",
+    "player": "Flekken",
+    "answer": "Flekken made 152 saves with a 73.4 save percentage. That volume of saves proves he is the best goalkeeper in the league.",
+    "expected": "fail"
+  },
+  {
+    "id": "fabricated_context",
+    "player": "Son",
+    "answer": "Son Heung-min scored his goals mostly from penalties, showing his open-play threat has vanished.",
+    "expected": "fail"
+  },
+  {
+    "id": "fabricated_context_assists",
+    "player": "Saka",
+    "answer": "Saka recorded 10 assists for Arsenal, most of them from set pieces and corners.",
+    "expected": "fail"
+  },
+  {
+    "id": "fabricated_context_form",
+    "player": "Isak",
+    "answer": "Isak scored 23 goals for Newcastle, with the bulk of them coming in a hot run after the winter break.",
+    "expected": "fail"
+  },
+  {
+    "id": "question_number_confirmed",
+    "player": "Saka",
+    "tests": "Agent confirms a fake number taken from the user's question - judge 1 exempts question numbers, so judge 2 must catch this",
+    "answer": "Yes, Saka scored 93 goals this season, an incredible tally.",
+    "expected": "fail"
+  },
+  {
+    "id": "question_number_confirmed_keeper",
+    "player": "Pickford",
+    "answer": "Yes, Pickford kept 20 clean sheets for Everton this season, a remarkable return.",
+    "expected": "fail"
+  },
+  {
+    "id": "unsupported_comparison",
+    "player": "Brennan",
+    "answer": "Brennan Johnson scored 11 goals for Tottenham, making him the club's most clinical finisher, ahead of Son.",
+    "expected": "fail"
+  },
+  {
+    "id": "unsupported_comparison_league",
+    "player": "Sels",
+    "answer": "Sels kept 13 clean sheets for Nottingham, more than any other keeper in the Premier League.",
+    "expected": "fail"
+  },
+  {
+    "id": "unsupported_projection",
+    "player": "Isak",
+    "answer": "Isak scored 23 goals in 2756 minutes for Newcastle, so he will comfortably pass 25 goals next season.",
+    "expected": "fail"
+  },
+  {
+    "id": "unsupported_valuation",
+    "player": "Hutchinson",
+    "answer": "Hutchinson scored 3 goals in 2583 minutes for Ipswich Town at age 20, which puts his market value around 40 million pounds.",
     "expected": "fail"
   },
   {
@@ -24,15 +115,39 @@
     "expected": "pass"
   },
   {
-    "id": "causal_leap",
-    "player": "Saka",
-    "answer": "Saka scored 6 goals. His low total proves Arsenal's tactics wasted him this season.",
-    "expected": "fail"
+    "id": "honest_simple_keeper",
+    "player": "Sels",
+    "answer": "Matz Sels made 119 saves and kept 13 clean sheets for Nottingham in the 2024-25 Premier League season.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_two_clubs",
+    "player": "Rashford",
+    "answer": "Marcus Rashford scored 4 goals for Manchester Utd and 2 goals for Aston Villa in the 2024-25 Premier League season.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_two_clubs_defender",
+    "player": "Chalobah",
+    "answer": "Trevoh Chalobah scored 0 goals in 910 minutes for Chelsea and 3 goals in 1060 minutes for Crystal Palace in the 2024-25 season.",
+    "expected": "pass"
   },
   {
     "id": "honest_with_hedge",
     "player": "Saka",
     "answer": "Saka scored 6 goals in the league. The data does not include cup competitions, so his overall total may be higher.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_with_hedge_europe",
+    "player": "Haaland",
+    "answer": "Haaland scored 22 goals for Manchester City. These are Premier League figures only, so Champions League and cup goals are not counted here.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_refusal",
+    "player": "Son",
+    "answer": "Son Heung-min scored 7 goals and recorded 9 assists for Tottenham. The data does not include expected goals, so I cannot judge how well he finished his chances.",
     "expected": "pass"
   },
   {
@@ -42,16 +157,106 @@
     "expected": "pass"
   },
   {
-    "id": "fabricated_context",
+    "id": "silent_omission_transfer",
+    "player": "Enciso",
+    "answer": "Julio Enciso scored 2 goals in 869 minutes for Ipswich Town in the 2024-25 season.",
+    "expected": "pass"
+  },
+  {
+    "id": "supported_penalty_split",
+    "player": "Salah",
+    "answer": "Salah scored 29 goals for Liverpool, 9 of them penalties, which leaves 20 from non-penalty situations.",
+    "expected": "pass"
+  },
+  {
+    "id": "supported_rate",
+    "player": "Saka",
+    "answer": "Saka scored 6 goals in 1729 minutes for Arsenal, which works out to about 0.31 goals per 90 minutes.",
+    "expected": "pass"
+  },
+  {
+    "id": "supported_internal_comparison",
+    "player": "Rashford",
+    "answer": "Rashford scored more goals at Manchester Utd (4) than at Aston Villa (2), though he also played more minutes there (978 against 444).",
+    "expected": "pass"
+  },
+  {
+    "id": "supported_sample_caveat",
+    "player": "Richarlison",
+    "answer": "Richarlison scored 4 goals in 504 minutes for Tottenham, but he made only 4 starts, so this is a small sample to judge him on.",
+    "expected": "pass"
+  },
+  {
+    "id": "team_need_asserted",
     "player": "Son",
-    "answer": "Son Heung-min scored his goals mostly from penalties, showing his open-play threat has vanished.",
+    "answer": "Son scored 7 goals in 2110 minutes for Tottenham at age 32. With that return from a senior forward, Tottenham clearly need a new attacker this window.",
     "expected": "fail"
   },
   {
-    "id": "question_number_confirmed",
-    "tests": "Agent confirms a fake number taken from the user's question - judge 1 exempts question numbers, so judge 2 must catch this",
-    "player": "Saka",
-    "answer": "Yes, Saka scored 93 goals this season, an incredible tally.",
+    "id": "team_need_asserted_defence",
+    "player": "Udogie",
+    "answer": "Udogie scored 0 goals and recorded 1 assist in 1924 minutes for Tottenham. Defence is the weakest part of the squad and is where Tottenham should spend.",
     "expected": "fail"
+  },
+  {
+    "id": "roster_currency",
+    "player": "Son",
+    "tests": "The data is a 2024-25 season record and says nothing about where a player is now - the Day 2 mistake",
+    "answer": "Son Heung-min is still Tottenham's main attacking threat, with 7 goals and 9 assists.",
+    "expected": "fail"
+  },
+  {
+    "id": "roster_currency_departure",
+    "player": "Kulusevski",
+    "answer": "Kulusevski scored 7 goals in 2389 minutes for Tottenham, and he remains at the club as a first-team regular.",
+    "expected": "fail"
+  },
+  {
+    "id": "league_average_claimed",
+    "player": "Solanke",
+    "answer": "Solanke scored 9 goals in 2201 minutes, a rate of 0.37 per 90, which is below the league average for a centre forward.",
+    "expected": "fail"
+  },
+  {
+    "id": "position_overspecified",
+    "player": "Son",
+    "answer": "Son played mainly as a left winger for Tottenham, which is where his 9 assists came from.",
+    "expected": "fail"
+  },
+  {
+    "id": "style_confound",
+    "player": "Semedo",
+    "answer": "Semedo scored 0 goals in 2886 minutes for Wolves, which shows he offers nothing going forward.",
+    "expected": "fail"
+  },
+  {
+    "id": "honest_team_need_refusal",
+    "player": "Son",
+    "answer": "Son scored 7 goals and recorded 9 assists for Tottenham. The data covers one player's league stats, so I cannot say which positions the squad needs to strengthen.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_roster_caveat",
+    "player": "Son",
+    "answer": "Son Heung-min scored 7 goals for Tottenham in the 2024-25 Premier League season. These are records for that season and do not show which club he is at now.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_position_caveat",
+    "player": "Son",
+    "answer": "The data lists Son's position as FW,MF, so he played forward and midfield roles. It does not say which flank he played on, so I cannot break his 9 assists down by area of the pitch.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_league_average_refusal",
+    "player": "Solanke",
+    "answer": "Solanke scored 9 goals in 2201 minutes for Tottenham, about 0.37 goals per 90. The data covers only this player, so I cannot compare that rate to a league average.",
+    "expected": "pass"
+  },
+  {
+    "id": "honest_style_caveat",
+    "player": "Semedo",
+    "answer": "Semedo scored 0 goals and recorded 4 assists in 2886 minutes for Wolves as a MF,DF, with 38 tackles won and 23 interceptions. The data does not show his team's possession or style of play, so the low attacking return on its own does not settle how much he contributed.",
+    "expected": "pass"
   }
 ]
